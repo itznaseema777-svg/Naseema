@@ -3,37 +3,33 @@
 # ==============================
 
 import streamlit as st
-import time
 import pandas as pd
 import plotly.express as px
+import time
 import re
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="MyFeeds@ZOMATO.com",
+    page_title="Zomato Feedback Analyzer",
     page_icon="🍕",
-    layout="wide",
-    initial_sidebar_state="expanded",
+    layout="wide"
 )
 
-st.title("🍕 Zomato Feeds")
+st.title("🍕 Zomato Feedback Analyzer")
 
 # ---------------- CUSTOM CSS ----------------
 st.markdown("""
 <style>
 .stApp {
-    background-color: ivory;
-    font-family: 'Segoe UI', sans-serif;
+    background-color: #fffaf0;
+    font-family: Arial, sans-serif;
 }
 .review-box {
     border-left: 5px solid;
     padding: 10px;
-    margin: 5px 0;
+    margin: 8px 0;
     border-radius: 5px;
     background-color: #f9f9f9;
-}
-img {
-    border-radius: 15px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -44,66 +40,26 @@ if "reviews" not in st.session_state:
 
 if "products" not in st.session_state:
     st.session_state.products = {
-        "Pizza": {
-            "total_score": 5,
-            "count": 1,
-            "type": "Breads",
-            "price": 549.54,
-            "category": "Veg/Non-Veg",
-            "ingredients": "Cheese, Mushroom, Chicken",
-            "image": "https://www.schwartz.co.uk/-/media/project/oneweb/schwartz/recipes/recipe_image_update/march_18_2025/easy_pizza_recipe_800x800.webp"
-        },
-        "Burger": {
-            "total_score": 4,
-            "count": 1,
-            "type": "Breads",
-            "price": 349.54,
-            "category": "Veg/Non-Veg",
-            "ingredients": "Cheese, Onion, Patty",
-            "image": "https://www.burgerdudes.se/wp-content/uploads/2025/06/crispy-chicken-burger-by-burgerdudes.jpg"
-        },
-        "French Fries": {
-            "total_score": 2,
-            "count": 1,
-            "type": "Snacks",
-            "price": 249.54,
-            "category": "Veg",
-            "ingredients": "Salted, Roasted",
-            "image": "https://kirbiecravings.com/wp-content/uploads/2019/09/easy-french-fries-1.jpg"
-        },
-        "Nuggets": {
-            "total_score": 5,
-            "count": 1,
-            "type": "Snacks",
-            "price": 149.54,
-            "category": "Veg/Non-Veg",
-            "ingredients": "Crispy Chicken/Veg",
-            "image": "https://www.acozykitchen.com/wp-content/uploads/2025/12/HomemadeChickenNuggets-06.jpg"
-        },
-        "Biryanis": {
-            "total_score": 3.8,
-            "count": 1,
-            "type": "Main Course",
-            "price": 449.54,
-            "category": "Veg/Non-Veg",
-            "ingredients": "Spiced Rice, Meat",
-            "image": "https://www.cookwithmanali.com/wp-content/uploads/2019/09/Vegetable-Biryani-Restaurant-Style.jpg"
-        }
+        "Pizza": {"total": 5, "count": 1, "price": 549.54},
+        "Burger": {"total": 4, "count": 1, "price": 349.54},
+        "French Fries": {"total": 2, "count": 1, "price": 249.54},
+        "Nuggets": {"total": 5, "count": 1, "price": 149.54},
+        "Biryanis": {"total": 4, "count": 1, "price": 449.54},
     }
 
 # ---------------- SENTIMENT FUNCTION ----------------
-def analyze_sentiment(text):
+def analyze(text):
     text = text.lower()
 
-    positive_words = ["delicious", "good", "wonderful", "happy", "best", "tasty", "love"]
-    negative_words = ["bad", "worst", "bitter", "salty", "regret", "slow", "cold", "disappointing"]
+    positive = ["good", "best", "tasty", "love", "excellent", "amazing"]
+    negative = ["bad", "worst", "cold", "slow", "disappointing"]
 
-    positive_score = sum(text.count(word) for word in positive_words)
-    negative_score = sum(text.count(word) for word in negative_words)
+    p_score = sum(text.count(word) for word in positive)
+    n_score = sum(text.count(word) for word in negative)
 
-    if positive_score > negative_score:
+    if p_score > n_score:
         return "Positive 😊", "#2E7D32"
-    elif negative_score > positive_score:
+    elif n_score > p_score:
         return "Negative 😢", "#D32F2F"
     else:
         return "Neutral 😐", "#FFA000"
@@ -116,20 +72,17 @@ menu = st.sidebar.radio("Navigation", ["Feedback", "Analytics"])
 # ==================================================
 if menu == "Feedback":
 
-    st.subheader("Explore Our Menu")
-    columns = st.columns(len(st.session_state.products))
+    st.subheader("🍽️ Menu")
 
-    for i, (name, details) in enumerate(st.session_state.products.items()):
-        with columns[i]:
+    cols = st.columns(len(st.session_state.products))
 
-            avg_rating = round(details["total_score"] / details["count"], 1)
+    for i, (name, info) in enumerate(st.session_state.products.items()):
+        with cols[i]:
+            avg_rating = round(info["total"] / info["count"], 1)
 
-            st.image(details["image"])
             st.markdown(f"### {name}")
             st.write("⭐" * int(round(avg_rating)))
-            st.write(f"**{details['category']} | {details['type']}**")
-            st.write(details["ingredients"])
-            st.markdown(f"### ₹{details['price']}")
+            st.write(f"Price: ₹{info['price']}")
 
             with st.expander("View Reviews"):
                 product_reviews = [r for r in st.session_state.reviews if r["product"] == name]
@@ -146,47 +99,49 @@ if menu == "Feedback":
                     st.caption("No reviews yet.")
 
     st.divider()
-    st.subheader("Share Your Experience")
+    st.subheader("✍️ Share Your Feedback")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        email = st.text_input("Email Address")
-        selected_product = st.selectbox("Select Item", ["--Select--"] + list(st.session_state.products.keys()))
+        email = st.text_input("Email")
+        product = st.selectbox("Select Product", ["--Select--"] + list(st.session_state.products.keys()))
         rating = st.slider("Rating", 1, 5, 3)
 
     with col2:
-        feedback_text = st.text_area("Write your feedback here", height=150)
+        feedback = st.text_area("Write Review", height=150)
 
         if st.button("Submit Review", use_container_width=True):
 
             if not re.match(r"^[\w\.-]+@[\w\.-]+\.\w+$", email):
-                st.error("Please enter valid email")
+                st.error("Enter valid email")
 
-            elif selected_product == "--Select--":
-                st.error("Please select a product")
+            elif product == "--Select--":
+                st.error("Select product")
 
-            elif any(r for r in st.session_state.reviews if r["email"] == email and r["product"] == selected_product):
+            elif any(r for r in st.session_state.reviews if r["email"] == email and r["product"] == product):
                 st.warning("You already reviewed this product")
 
-            elif feedback_text:
+            elif feedback.strip() == "":
+                st.error("Write something in review")
 
-                sentiment, color = analyze_sentiment(feedback_text)
+            else:
+                sentiment, color = analyze(feedback)
 
-                st.session_state.products[selected_product]["total_score"] += rating
-                st.session_state.products[selected_product]["count"] += 1
+                st.session_state.products[product]["total"] += rating
+                st.session_state.products[product]["count"] += 1
 
                 st.session_state.reviews.append({
                     "email": email,
-                    "product": selected_product,
-                    "text": feedback_text,
+                    "product": product,
                     "rating": rating,
+                    "text": feedback,
                     "sentiment": sentiment,
                     "color": color,
                     "time": time.time()
                 })
 
-                st.success("Review submitted successfully!")
+                st.success("Review Submitted Successfully!")
                 st.rerun()
 
 # ==================================================
@@ -194,12 +149,11 @@ if menu == "Feedback":
 # ==================================================
 elif menu == "Analytics":
 
-    st.subheader("Performance Insights")
+    st.subheader("📊 Analytics Dashboard")
 
     if not st.session_state.reviews:
-        st.info("No reviews submitted yet.")
+        st.info("No reviews available yet.")
     else:
-
         df = pd.DataFrame(st.session_state.reviews)
 
         col1, col2 = st.columns(2)
@@ -215,10 +169,15 @@ elif menu == "Analytics":
 
         with col2:
             avg_df = df.groupby("product")["rating"].mean().reset_index()
-            fig2 = px.area(avg_df, x="product", y="rating", title="Average Rating by Product")
+            fig2 = px.bar(
+                avg_df,
+                x="product",
+                y="rating",
+                title="Average Rating"
+            )
             st.plotly_chart(fig2, use_container_width=True)
 
-        st.subheader("Recent Reviews")
+        st.subheader("🕒 Recent Reviews")
 
         df = df.sort_values("time", ascending=False)
 
